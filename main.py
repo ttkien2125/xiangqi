@@ -247,8 +247,13 @@ def get_legal_moves(board, turn):
     moves = get_all_moves(board, turn)
     legal_moves = []
     for move in moves:
-        new_board = make_move(board, move)
-        if not is_in_check(new_board, turn) and not flying_general_illegal(new_board):
+        sr, sc = move[0]
+        ptype = board[sr][sc][1]
+        if ptype == "K":
+            new_board = make_move(board, move)
+            if not is_in_check(new_board, turn) and not flying_general_illegal(new_board):
+                legal_moves.append(move)
+        else:
             legal_moves.append(move)
     return legal_moves
 
