@@ -245,12 +245,13 @@ def is_checkmate(board, turn):
 
 def get_legal_moves(board, turn):
     moves = get_all_moves(board, turn)
-    legal_moves = []
-    for move in moves:
-        new_board = make_move(board, move)
-        if not is_in_check(new_board, turn) and not flying_general_illegal(new_board):
-            legal_moves.append(move)
-    return legal_moves
+    return moves
+    # legal_moves = []
+    # for move in moves:
+    #     new_board = make_move(board, move)
+    #     if not is_in_check(new_board, turn) and not flying_general_illegal(new_board):
+    #         legal_moves.append(move)
+    # return legal_moves
 
 PIECE_VALUES = {
     'K': 10000, 'A': 110, 'E': 110, 'R': 600,
@@ -508,6 +509,33 @@ def evaluate_board(board, turn):
 
     return score
 
+
+def score_move(move, board, turn):
+    score = 0
+
+    # Capture scoring (MVV-LVA)
+    sr, sc = move[0]
+    er, ec = move[1]
+
+    piece = board[sr][sc]
+    target = board[er][ec]
+    if target != '--':
+        attacker_value = PIECE_VALUES[piece[1]]
+        victim_value = PIECE_VALUES[target[1]]
+        score += 100_000 + (victim_value * 10 - attacker_value)
+
+    return score
+
+def order_moves(moves, board, turn):
+    move_scores = []
+    for move in moves:
+        move_scores.append((score_move(move, board, turn), move))
+    move_scores.sort(reverse=True, key=lambda x: x[0])
+    return [m for _, m in move_scores]
+
+
+
+
 nodes_searched = 0
 
 def quiescence_search(board, turn, alpha, beta):
@@ -544,9 +572,12 @@ def negamax(board, depth, alpha, beta, turn):
         val = quiescence_search(board, turn, alpha, beta)
         return val, None
 
+    moves = get_legal_moves(board, turn)
+    ordered_moves = order_moves(moves, board, turn)
+
     max_eval = float('-inf')
     best_move = None
-    for move in get_legal_moves(board, turn):
+    for move in ordered_moves:
         new_board = make_move(board, move)
         eval, _ = negamax(new_board, depth - 1, -beta, -alpha, opposite_color(turn))
         eval = -eval
